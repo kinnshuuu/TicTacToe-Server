@@ -40,7 +40,6 @@ func (c *Client) handleRoomPlayer(gameRoom *GameRoom) {
 		}
 		if isOver == 1 {
 			c.BroadCastMessage(gameRoom, result)
-			// break
 		}
 	}
 
