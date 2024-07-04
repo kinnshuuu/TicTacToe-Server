@@ -1,7 +1,7 @@
 package main
 
 import (
-	controller "TicTacToe-GolangServer/controller"
+	controller "TicTacToe-Server/controller"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module TicTacToe-GolangServer
+module TicTacToe-Server
 
 go 1.20
 

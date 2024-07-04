@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"TicTacToe-GolangServer/game"
+	"TicTacToe-Server/game"
 	"log"
 	"net/http"
 )

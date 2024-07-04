@@ -1,7 +1,7 @@
 package models
 
 import (
-	"TicTacToe-GolangServer/constants"
+	"TicTacToe-Server/constants"
 	"strconv"
 )
 

@@ -1,10 +1,10 @@
 package models
 
 import (
-	"TicTacToe-GolangServer/constants"
+	"TicTacToe-Server/constants"
 )
 
-type SendMessage struct {
+type MessageToSend struct {
 	CommandType int                     `json:"command_type"`
 	State       constants.GameRoomState `json:"state"`
 	Data        string                  `json:"data"`

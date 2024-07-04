@@ -1,8 +1,7 @@
 package game
 
 import (
-	"TicTacToe-GolangServer/models"
-	"fmt"
+	"TicTacToe-Server/models"
 	"log"
 	"net/http"
 	"sync"
@@ -11,23 +10,10 @@ import (
 )
 
 var playerId = 1
-
-type WaitingRoom struct {
-	Clients []*models.Client
-	Mutex   sync.Mutex
-}
-
-func (wr *WaitingRoom) AddPlayer(client *models.Client) {
-	wr.Mutex.Lock()
-	defer wr.Mutex.Unlock()
-
-	wr.Clients = append(wr.Clients, client)
-	fmt.Println(wr.Clients[len(wr.Clients)-1])
-	go client.SendPlayerWaitMessage()
-}
+var roomId = 1
 
 type Game struct {
-	WaitingRoom *WaitingRoom
+	WaitingRoom *models.WaitingRoom
 	GameRooms   []*models.GameRoom
 }
 
@@ -51,18 +37,20 @@ func (g *Game) ServeClient(w http.ResponseWriter, r *http.Request) {
 func (g *Game) MatchOnlinePlayer() {
 	for {
 		if len(g.WaitingRoom.Clients) > 1 {
-			player1 := g.WaitingRoom.Clients[len(g.WaitingRoom.Clients)-1]
-			g.WaitingRoom.Clients = g.WaitingRoom.Clients[:len(g.WaitingRoom.Clients)-1]
-			player2 := g.WaitingRoom.Clients[len(g.WaitingRoom.Clients)-1]
-			gameRoom := models.NewGameRoom(player1, player2)
-			g.WaitingRoom.Clients = g.WaitingRoom.Clients[:len(g.WaitingRoom.Clients)-1]
+			player1 := g.WaitingRoom.Clients[0]
+			g.WaitingRoom.Clients = g.WaitingRoom.Clients[1:]
+			player2 := g.WaitingRoom.Clients[0]
+			g.WaitingRoom.Clients = g.WaitingRoom.Clients[1:]
+			gameRoom := models.NewGameRoom(player1, player2, roomId)
+			log.Printf("New Game Room Created with Id: %d and having players with Player ID : %d and %d", roomId, player1.PlayerId, player2.PlayerId)
+			roomId++
 			go gameRoom.SendStartPlayingSignal()
 		}
 	}
 }
 
-func NewWaitingRoom() *WaitingRoom {
-	return &WaitingRoom{
+func NewWaitingRoom() *models.WaitingRoom {
+	return &models.WaitingRoom{
 		Clients: make([]*models.Client, 0),
 		Mutex:   sync.Mutex{},
 	}

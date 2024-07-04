@@ -1,7 +1,7 @@
 package models
 
 import (
-	"TicTacToe-GolangServer/constants"
+	"TicTacToe-Server/constants"
 	"fmt"
 	"log"
 	"sync"
@@ -17,7 +17,7 @@ type Client struct {
 }
 
 func (c *Client) SendPlayerWaitMessage() {
-	data := SendMessage{State: constants.WAITING, Data: "0", Turn: 0, CommandType: int(constants.COMMAND_TYPE_MOVE)}
+	data := MessageToSend{State: constants.WAITING, Data: "0", Turn: 0, CommandType: int(constants.COMMAND_TYPE_MOVE)}
 	err := c.SendWebSocketMessage(data)
 	if err != nil {
 		log.Println("Failed to send message from client:", err)
@@ -25,7 +25,6 @@ func (c *Client) SendPlayerWaitMessage() {
 }
 
 func (c *Client) handleRoomPlayer(gameRoom *GameRoom) {
-
 	for {
 		var msg ReceivedMessage
 		err := c.Conn.ReadJSON(&msg)
@@ -45,7 +44,7 @@ func (c *Client) handleRoomPlayer(gameRoom *GameRoom) {
 }
 
 func (c *Client) BroadCastMessage(gameRoom *GameRoom, result int) {
-	data := SendMessage{State: constants.PLAYING, Data: fmt.Sprint(result), Turn: 0, CommandType: int(constants.COMMAND_TYPE_RESULT)}
+	data := MessageToSend{State: constants.PLAYING, Data: fmt.Sprint(result), Turn: 0, CommandType: int(constants.COMMAND_TYPE_RESULT)}
 	if c.PlayerId == gameRoom.Player1.PlayerId {
 		err := gameRoom.Player1.SendWebSocketMessage(data)
 		if err != nil {
@@ -75,7 +74,7 @@ func (c *Client) BroadCastMessage(gameRoom *GameRoom, result int) {
 }
 
 func (c *Client) RemoveRoom(gameRoom *GameRoom) {
-	data := SendMessage{State: constants.WAITING, Data: "0", Turn: 0, CommandType: int(constants.COMMAND_TYPE_DISCONNECTED)}
+	data := MessageToSend{State: constants.WAITING, Data: "0", Turn: 0, CommandType: int(constants.COMMAND_TYPE_DISCONNECTED)}
 
 	if gameRoom.Player1 != nil && c.PlayerId == gameRoom.Player1.PlayerId {
 		log.Println("Hiii")
@@ -96,7 +95,7 @@ func (c *Client) RemoveRoom(gameRoom *GameRoom) {
 
 func (c *Client) sendResponseToOtherClients(gameRoom *GameRoom, msg ReceivedMessage) {
 
-	data := SendMessage{CommandType: msg.CommandType, State: constants.PLAYING, Data: string(msg.Data), Turn: 1}
+	data := MessageToSend{CommandType: msg.CommandType, State: constants.PLAYING, Data: string(msg.Data), Turn: 1}
 
 	if c.PlayerId == gameRoom.Player1.PlayerId {
 		err := gameRoom.Player2.SendWebSocketMessage(data)
@@ -111,7 +110,7 @@ func (c *Client) sendResponseToOtherClients(gameRoom *GameRoom, msg ReceivedMess
 	}
 }
 
-func (c *Client) SendWebSocketMessage(data SendMessage) error {
+func (c *Client) SendWebSocketMessage(data MessageToSend) error {
 	c.WriteMutex.Lock()
 	defer c.WriteMutex.Unlock()
 	err := websocket.WriteJSON(c.Conn, data)
