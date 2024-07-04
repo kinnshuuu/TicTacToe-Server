@@ -33,6 +33,8 @@ func (b *Board) CheckForWin(playerId int, msg ReceivedMessage) (int, int) {
 	if win == 1 {
 		return 1, 14
 	}
+
+	// Check Other Diagonal
 	win = b.CheckSectionForWin(0, 2, 1, 1, 2, 0, playerId)
 	if win == 1 {
 		return 1, 14

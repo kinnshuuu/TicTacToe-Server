@@ -4,14 +4,16 @@ import (
 	"TicTacToe-Server/constants"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
 type Client struct {
-	Conn      *websocket.Conn
-	PlayerId  int
-	PieceType int
+	Conn       *websocket.Conn
+	PlayerId   int
+	PieceType  int
+	WriteMutex sync.Mutex
 }
 
 func (c *Client) SendPlayerWaitMessage() {
@@ -33,8 +35,12 @@ func (c *Client) handleRoomPlayer(gameRoom *GameRoom) {
 		gameRoom.Board.PlaceMove(c.PlayerId, msg)
 		c.sendResponseToOtherClients(gameRoom, msg)
 		isOver, result := gameRoom.Board.CheckForWin(c.PlayerId, msg)
+		if result == constants.STATE_WIN {
+			log.Printf("Player with Id %d won", c.PlayerId)
+		}
 		if isOver == 1 {
 			c.BroadCastMessage(gameRoom, result)
+			// break
 		}
 	}
 
@@ -92,7 +98,6 @@ func (c *Client) RemoveRoom(gameRoom *GameRoom) {
 }
 
 func (c *Client) sendResponseToOtherClients(gameRoom *GameRoom, msg ReceivedMessage) {
-
 	data := MessageToSend{CommandType: msg.CommandType, State: constants.PLAYING, Data: string(msg.Data), Turn: 1}
 
 	if c.PlayerId == gameRoom.Player1.PlayerId {
@@ -109,6 +114,9 @@ func (c *Client) sendResponseToOtherClients(gameRoom *GameRoom, msg ReceivedMess
 }
 
 func (c *Client) SendWebSocketMessage(data MessageToSend) error {
+	c.WriteMutex.Lock()
+	defer c.WriteMutex.Unlock()
+
 	err := websocket.WriteJSON(c.Conn, data)
 	return err
 }
