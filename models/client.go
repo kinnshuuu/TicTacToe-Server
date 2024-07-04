@@ -4,16 +4,14 @@ import (
 	"TicTacToe-Server/constants"
 	"fmt"
 	"log"
-	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
 type Client struct {
-	Conn       *websocket.Conn
-	PlayerId   int
-	PieceType  int
-	WriteMutex sync.Mutex
+	Conn      *websocket.Conn
+	PlayerId  int
+	PieceType int
 }
 
 func (c *Client) SendPlayerWaitMessage() {
@@ -111,8 +109,6 @@ func (c *Client) sendResponseToOtherClients(gameRoom *GameRoom, msg ReceivedMess
 }
 
 func (c *Client) SendWebSocketMessage(data MessageToSend) error {
-	c.WriteMutex.Lock()
-	defer c.WriteMutex.Unlock()
 	err := websocket.WriteJSON(c.Conn, data)
 	return err
 }
