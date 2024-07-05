@@ -20,7 +20,7 @@ func (c *Client) SendPlayerWaitMessage() {
 	data := MessageToSend{State: constants.WAITING, Data: "0", Turn: 0, CommandType: int(constants.COMMAND_TYPE_MOVE)}
 	err := c.SendWebSocketMessage(data)
 	if err != nil {
-		log.Println("Failed to send message from client:", err)
+		log.Printf("Failed to send wait message to client with PlayerId - %d: %v", c.PlayerId, err)
 	}
 }
 
@@ -29,7 +29,7 @@ func (c *Client) handleRoomPlayer(gameRoom *GameRoom) {
 		var msg ReceivedMessage
 		err := c.Conn.ReadJSON(&msg)
 		if err != nil {
-			log.Println("Failed to read message from client:", err)
+			log.Printf("Failed to read message from client with PlayerId - %d: %v", c.PlayerId, err)
 			break
 		}
 		gameRoom.Board.PlaceMove(c.PlayerId, msg)
@@ -48,48 +48,49 @@ func (c *Client) handleRoomPlayer(gameRoom *GameRoom) {
 
 func (c *Client) BroadCastMessage(gameRoom *GameRoom, result int) {
 	data := MessageToSend{State: constants.PLAYING, Data: fmt.Sprint(result), Turn: 0, CommandType: int(constants.COMMAND_TYPE_RESULT)}
+	var err error
+
 	if c.PlayerId == gameRoom.Player1.PlayerId {
-		err := gameRoom.Player1.SendWebSocketMessage(data)
+		err = gameRoom.Player1.SendWebSocketMessage(data)
 		if err != nil {
-			log.Println("Failed to send message to client:", err)
+			log.Printf("Failed to send result message to client with PlayerId - %d: %v", gameRoom.Player1.PlayerId, err)
 		}
 		if result == constants.STATE_WIN {
 			data.Data = fmt.Sprint(constants.STATE_LOSE)
 			err = gameRoom.Player2.SendWebSocketMessage(data)
 			if err != nil {
-				log.Println("Failed to send message to client:", err)
+				log.Printf("Failed to send result message to client with PlayerId - %d: %v", gameRoom.Player2.PlayerId, err)
 			}
 		}
 	} else {
-		err := gameRoom.Player2.SendWebSocketMessage(data)
+		err = gameRoom.Player2.SendWebSocketMessage(data)
 		if err != nil {
-			log.Println("Failed to send message to client:", err)
+			log.Printf("Failed to send result message to client with PlayerId - %d: %v", gameRoom.Player2.PlayerId, err)
 		}
 		if result == constants.STATE_WIN {
 			data.Data = fmt.Sprint(constants.STATE_LOSE)
 			err = gameRoom.Player1.SendWebSocketMessage(data)
 			if err != nil {
-				log.Println("Failed to send message to client:", err)
+				log.Printf("Failed to send result message to client with PlayerId - %d: %v", gameRoom.Player1.PlayerId, err)
 			}
 		}
 	}
-
 }
 
 func (c *Client) RemoveRoom(gameRoom *GameRoom) {
 	data := MessageToSend{State: constants.WAITING, Data: "0", Turn: 0, CommandType: int(constants.COMMAND_TYPE_DISCONNECTED)}
 
 	if gameRoom.Player1 != nil && c.PlayerId == gameRoom.Player1.PlayerId {
-		log.Println("Hiii")
+		log.Printf("Client %d left the room", c.PlayerId)
 		err := gameRoom.Player2.SendWebSocketMessage(data)
 		if err != nil {
-			log.Println("Failed to send message to client:", err)
+			log.Printf("Failed to notify client %d about disconnection: %v", gameRoom.Player2.PlayerId, err)
 		}
 	} else if gameRoom.Player2 != nil && c.PlayerId == gameRoom.Player2.PlayerId {
-		log.Println("Byee")
+		log.Printf("Client %d left the room", c.PlayerId)
 		err := gameRoom.Player1.SendWebSocketMessage(data)
 		if err != nil {
-			log.Println("Failed to send message to client:", err)
+			log.Printf("Failed to notify client %d about disconnection: %v", gameRoom.Player1.PlayerId, err)
 		}
 	}
 	gameRoom.Player1 = nil
@@ -98,16 +99,17 @@ func (c *Client) RemoveRoom(gameRoom *GameRoom) {
 
 func (c *Client) sendResponseToOtherClients(gameRoom *GameRoom, msg ReceivedMessage) {
 	data := MessageToSend{CommandType: msg.CommandType, State: constants.PLAYING, Data: string(msg.Data), Turn: 1}
+	var err error
 
 	if c.PlayerId == gameRoom.Player1.PlayerId {
-		err := gameRoom.Player2.SendWebSocketMessage(data)
+		err = gameRoom.Player2.SendWebSocketMessage(data)
 		if err != nil {
-			log.Println("Failed to send message to client:", err)
+			log.Printf("Failed to send message to client %d: %v", gameRoom.Player2.PlayerId, err)
 		}
 	} else {
-		err := gameRoom.Player1.SendWebSocketMessage(data)
+		err = gameRoom.Player1.SendWebSocketMessage(data)
 		if err != nil {
-			log.Println("Failed to send message to client:", err)
+			log.Printf("Failed to send message to client %d: %v", gameRoom.Player1.PlayerId, err)
 		}
 	}
 }
@@ -116,6 +118,9 @@ func (c *Client) SendWebSocketMessage(data MessageToSend) error {
 	c.WriteMutex.Lock()
 	defer c.WriteMutex.Unlock()
 
-	err := websocket.WriteJSON(c.Conn, data)
-	return err
+	err := c.Conn.WriteJSON(data)
+	if err != nil {
+		return fmt.Errorf("failed to send WebSocket message: %w", err)
+	}
+	return nil
 }
