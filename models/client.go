@@ -35,6 +35,9 @@ func (c *Client) handleRoomPlayer(gameRoom *GameRoom) {
 		gameRoom.Board.PlaceMove(c.PlayerId, msg)
 		c.sendResponseToOtherClients(gameRoom, msg)
 		isOver, result := gameRoom.Board.CheckForWin(c.PlayerId, msg)
+		if result == constants.STATE_DRAW {
+			log.Printf("The game is draw in game room %d", gameRoom.RoomId)
+		}
 		if result == constants.STATE_WIN {
 			log.Printf("Player with Id %d won", c.PlayerId)
 		}
@@ -61,6 +64,12 @@ func (c *Client) BroadCastMessage(gameRoom *GameRoom, result int) {
 			if err != nil {
 				log.Printf("Failed to send result message to client with PlayerId - %d: %v", gameRoom.Player2.PlayerId, err)
 			}
+		} else if result == constants.STATE_DRAW {
+			data.Data = fmt.Sprint(constants.STATE_DRAW)
+			err = gameRoom.Player2.SendWebSocketMessage(data)
+			if err != nil {
+				log.Printf("Failed to send result message to client with PlayerId - %d: %v", gameRoom.Player2.PlayerId, err)
+			}
 		}
 	} else {
 		err = gameRoom.Player2.SendWebSocketMessage(data)
@@ -69,6 +78,12 @@ func (c *Client) BroadCastMessage(gameRoom *GameRoom, result int) {
 		}
 		if result == constants.STATE_WIN {
 			data.Data = fmt.Sprint(constants.STATE_LOSE)
+			err = gameRoom.Player1.SendWebSocketMessage(data)
+			if err != nil {
+				log.Printf("Failed to send result message to client with PlayerId - %d: %v", gameRoom.Player1.PlayerId, err)
+			}
+		} else if result == constants.STATE_DRAW {
+			data.Data = fmt.Sprint(constants.STATE_DRAW)
 			err = gameRoom.Player1.SendWebSocketMessage(data)
 			if err != nil {
 				log.Printf("Failed to send result message to client with PlayerId - %d: %v", gameRoom.Player1.PlayerId, err)
