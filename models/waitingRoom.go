@@ -18,3 +18,10 @@ func (wr *WaitingRoom) AddPlayer(client *Client) {
 	log.Printf("New Player joined with Player ID: %d", client.PlayerId)
 	go client.SendPlayerWaitMessage()
 }
+
+func NewWaitingRoom() *WaitingRoom {
+	return &WaitingRoom{
+		Clients: make([]*Client, 0),
+		Mutex:   sync.Mutex{},
+	}
+}

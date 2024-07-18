@@ -4,7 +4,6 @@ import (
 	"TicTacToe-Server/models"
 	"log"
 	"net/http"
-	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -49,15 +48,8 @@ func (g *Game) MatchOnlinePlayer() {
 	}
 }
 
-func NewWaitingRoom() *models.WaitingRoom {
-	return &models.WaitingRoom{
-		Clients: make([]*models.Client, 0),
-		Mutex:   sync.Mutex{},
-	}
-}
-
 func NewGame() *Game {
-	waitingRoom := NewWaitingRoom()
+	waitingRoom := models.NewWaitingRoom()
 	return &Game{
 		WaitingRoom: waitingRoom,
 		GameRooms:   make([]*models.GameRoom, 0),
